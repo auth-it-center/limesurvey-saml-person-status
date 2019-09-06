@@ -25,10 +25,13 @@ class SAMLPersonStatus extends Limesurvey\PluginManager\PluginBase
             'type' => 'string',
             'label' => 'SAML Person Status Attribute',
             'default' => 'authPersonStatus'
+        ],
+        'accepted_status' => [
+            'type' => 'string',
+            'label' => 'Available person status',
+            'default' => 'active,suspended,retired,graduated,departed,unknown,regular,degreeCandidate,stagnant,dropped,deceased'
         ]
     ];
-
-    protected $allowed_statuses = ['whatever', 'active', 'inactive', 'missing'];
 
     public function init()
     {
@@ -55,14 +58,8 @@ class SAMLPersonStatus extends Limesurvey\PluginManager\PluginBase
                 'allowed_status' => [
                     'label' => 'Allowed Status',
                     'help' => 'Permit the use of the survey only on the desired person status',
-                    'type' => 'select',
-                    'options' => [
-                        'whatever' => 'Whatever',
-                        'active' => 'Active',
-                        'inactive' => 'Inactive',
-                        'missing' => 'Missing',
-                    ],
-                    'current' => $this->get('allowed_status', 'Survey', $event->get('survey'), 'whatever'),
+                    'type' => 'string',
+                    'current' => $this->get('allowed_status', 'Survey', $event->get('survey'), 'whatever|active'),
                 ]
             ]
         ]);
@@ -91,7 +88,7 @@ class SAMLPersonStatus extends Limesurvey\PluginManager\PluginBase
         $personStatusField = $this->get('person_status_mapping', null, null, $this->settings['person_status_mapping']['default']);
 
         if (isset($attributes[$personStatusField][0])) {
-            return $attributes[$personStatusField][0] ? 'active' : 'inactive';
+            return $attributes[$personStatusField][0];
         }
         return 'missing';
     }
@@ -110,15 +107,29 @@ class SAMLPersonStatus extends Limesurvey\PluginManager\PluginBase
         }
     }
 
-    public function checkPersonStatus($person_status, $status)
+    public function checkPersonStatus($person_status, $statuses)
     {
-        if (!in_array($status, $this->allowed_statuses)) {
-            throw new CHttpException(403, gT("Invalid parameter for person status code $status"));
+        $allowed_statuses = $this->get('accepted_status', null, null, $this->settings['accepted_status']['default']);
+        $allowed_statuses = explode(',', $allowed_statuses);
+
+        if (!in_array('whatever', $allowed_statuses)) {
+            $allowed_statuses[] = 'whatever';
+        }
+        if (!in_array('missing', $allowed_statuses)) {
+            $allowed_statuses[] = 'missing';
         }
 
-        if ($status === 'whatever') {
+        $statuses = explode('|', $statuses);
+        foreach ($status as $statuses) {
+            if (!in_array($status, $allowed_statuses)) {
+                throw new CHttpException(403, gT("Invalid parameter for person status code $status"));
+            }
+        }
+
+        if (in_array('whatever', $statuses) || in_array($person_status, $statuses)) {
             return true;
         }
-        return $status === $person_status;
+
+        return false;
     }
 }
