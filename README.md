@@ -26,6 +26,3 @@ and **Enable** the plugin
 ### Plugin
 * **Enabled** If checked then the plugin is enabled for the selected survey
 * **Allowed Status** Option that specifies what person status should participant meet in order to participate at the survey
-
-## Images
-![Global Plugin settings](images/global_settings.png)
