@@ -39,30 +39,34 @@ class SAMLPersonStatus extends Limesurvey\PluginManager\PluginBase
         $this->subscribe('newSurveySettings');
         $this->subscribe('beforeSurveyPage');
         $this->subscribe('afterSurveyComplete');
+        $this->subscribe('getGlobalBasePermissions');
     }
 
     public function beforeSurveySettings()
     {
-        $event = $this->event;
+        $permission = Permission::model()->hasGlobalPermission('plugin_settings', 'update');
+        if ($permission) {
+            $event = $this->event;
 
-        $event->set('surveysettings.' . $this->id, [
-            'name' => get_class($this),
-            'settings' => [
-                'person_status_plugin_enabled' => [
-                    'type' => 'checkbox',
-                    'label' => 'Enabled',
-                    'help' => 'Enable the plugin for this survey',
-                    'default' => false,
-                    'current' => $this->get('person_status_plugin_enabled', 'Survey', $event->get('survey'), false),
-                ],
-                'allowed_status' => [
-                    'label' => 'Allowed Status',
-                    'help' => 'Permit the use of the survey only on the desired person status',
-                    'type' => 'string',
-                    'current' => $this->get('allowed_status', 'Survey', $event->get('survey'), 'whatever|active'),
+            $event->set('surveysettings.' . $this->id, [
+                'name' => get_class($this),
+                'settings' => [
+                    'person_status_plugin_enabled' => [
+                        'type' => 'checkbox',
+                        'label' => 'Enabled',
+                        'help' => 'Enable the plugin for this survey',
+                        'default' => false,
+                        'current' => $this->get('person_status_plugin_enabled', 'Survey', $event->get('survey'), false),
+                    ],
+                    'allowed_status' => [
+                        'label' => 'Allowed Status',
+                        'help' => 'Permit the use of the survey only on the desired person status',
+                        'type' => 'string',
+                        'current' => $this->get('allowed_status', 'Survey', $event->get('survey'), 'whatever|active'),
+                    ]
                 ]
-            ]
-        ]);
+            ]);
+        }
     }
 
     public function newSurveySettings()
@@ -141,5 +145,21 @@ class SAMLPersonStatus extends Limesurvey\PluginManager\PluginBase
         }
 
         return false;
+    }
+
+    public function getGlobalBasePermissions() {
+        $this->getEvent()->append('globalBasePermissions',array(
+            'plugin_settings' => array(
+                'create' => false,
+                'update' => true, // allow only update permission to display
+                'delete' => false,
+                'import' => false,
+                'export' => false,
+                'read' => false,
+                'title' => gT("Save Plugin Settings"),
+                'description' => gT("Allow user to save plugin settings"),
+                'img' => 'usergroup'
+            ),
+        ));
     }
 }
