@@ -111,6 +111,15 @@ class SAMLPersonStatus extends Limesurvey\PluginManager\PluginBase
     {
         $plugin_enabled = $this->get('person_status_plugin_enabled', 'Survey', $this->event->get('surveyId'));
         if ($plugin_enabled) {
+            // If user is admin skip guard
+            $AuthSurvey = $this->pluginManager->loadPlugin('SAMLProtect');
+            if ($AuthSurvey) {
+                $flag = $AuthSurvey->guardBypass($this->event->get('surveyId'));
+                if ($flag) {
+                    return;
+                }
+            }
+
             $allowed_person_status = $this->get('allowed_status', 'Survey', $this->event->get('surveyId'));
 
             $person_status = $this->getPersonStatus();
@@ -134,7 +143,7 @@ class SAMLPersonStatus extends Limesurvey\PluginManager\PluginBase
         }
 
         $statuses = explode('|', $statuses);
-        foreach ($status as $statuses) {
+        foreach ($statuses as $status) {
             if (!in_array($status, $allowed_statuses)) {
                 throw new CHttpException(403, gT("Invalid parameter for person status code $status"));
             }
